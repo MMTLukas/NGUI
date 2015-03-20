@@ -11,35 +11,63 @@
  	* GND connection of the PING))) attached to ground
  	* SIG connection of the PING))) attached to digital pin 7
  */
+ 
+#include <Adafruit_NeoPixel.h>
+#include <avr/power.h>
 
-// Pin number of the sensor's output
-const int pingPin = 7;
+#define PIN_STRIP 6
+#define PIN_SENSOR 7
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(16, PIN_STRIP, NEO_GRB + NEO_KHZ800);
 
 void setup() {
-  // initialize serial communication:
   Serial.begin(9600);
+  
+  strip.begin();
+  strip.show();
 }
 
 void loop(){
   triggerSensor();
-  long distance = readSensor();
+  int distance = readSensor();
+  changeColor(distance);
   printDistance(distance);
   
   delay(50);
+}
+
+long changeColor(int distance){
+  int maxDistance = 200;
+  int minDistance = 50;
+  
+  distance = max(minDistance, distance);
+  distance = min(maxDistance, distance);
+
+  int value = 255.00 / (maxDistance - minDistance) * (distance - minDistance);
+  int green = value;
+  int red = 255 - value;
+
+  uint32_t c = strip.Color(red, green, 0);
+
+  for(uint16_t i=0; i<strip.numPixels(); i++) {
+    strip.setPixelColor(i, c);
+  }
+  
+  strip.show();
 }
 
 long readSensor(){
   // The same pin is used to read the signal from the PING))): a HIGH
   // pulse whose duration is the time (in microseconds) from the sending
   // of the ping to the reception of its echo off of an object.
-  pinMode(pingPin, INPUT);
-  long duration = pulseIn(pingPin, HIGH);
+  pinMode(PIN_SENSOR, INPUT);
+  long duration = pulseIn(PIN_SENSOR, HIGH);
   
   // convert the time into a distance
   return microsecondsToCentimeters(duration);
 }
 
-void printDistance(long distance){
+void printDistance(int distance){
   Serial.print(distance);
   Serial.print("cm");
   Serial.println();
@@ -48,15 +76,15 @@ void printDistance(long distance){
 void triggerSensor(){
   // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
   // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
-  pinMode(pingPin, OUTPUT);
-  digitalWrite(pingPin, LOW);
+  pinMode(PIN_SENSOR, OUTPUT);
+  digitalWrite(PIN_SENSOR, LOW);
   delayMicroseconds(2);
-  digitalWrite(pingPin, HIGH);
+  digitalWrite(PIN_SENSOR, HIGH);
   delayMicroseconds(5);
-  digitalWrite(pingPin, LOW);  
+  digitalWrite(PIN_SENSOR, LOW);  
 }
 
-long microsecondsToCentimeters(long microseconds)
+int microsecondsToCentimeters(long microseconds)
 {
   // The speed of sound is 340 m/s or 29 microseconds per centimeter.
   // The ping travels out and back, so to find the distance of the
