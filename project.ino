@@ -17,8 +17,9 @@
 
 #define PIN_STRIP 6
 #define PIN_SENSOR 7
+#define NUMBER_PINS 16
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(16, PIN_STRIP, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_PINS, PIN_STRIP, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   Serial.begin(9600);
@@ -30,13 +31,48 @@ void setup() {
 void loop(){
   triggerSensor();
   int distance = readSensor();
-  changeColor(distance);
+  changeColorLinear(distance);
   printDistance(distance);
   
-  delay(50);
+  delay(500);
 }
 
-long changeColor(int distance){
+long changeColorLinear(int distance){
+  int maxDistance = 160;
+  int minDistance = 10;
+
+  uint32_t leds[strip.numPixels()];
+  
+  for(int i=0; i<strip.numPixels(); i++){
+    int value = min(i*20,255);
+    int green = 255-value;
+    int red = value;
+    leds[i] = strip.Color(red, green, 0);
+  }
+  
+  distance = max(minDistance, distance);
+  distance = min(maxDistance, distance);
+  
+  int height = (maxDistance - minDistance) / (distance - minDistance);  
+  
+  Serial.print("height: ");
+  Serial.print(height);
+  Serial.println();
+
+  for(uint16_t i=0; i<strip.numPixels(); i++) {
+  
+    if(height >= i){
+      strip.setPixelColor(i, leds[i]);
+    }
+    else{
+      strip.setPixelColor(i, strip.Color(0,0,0));
+    }    
+  }
+  
+  strip.show();
+}
+
+long changeColorAll(int distance){
   int maxDistance = 200;
   int minDistance = 50;
   
