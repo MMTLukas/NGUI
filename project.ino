@@ -34,11 +34,11 @@ void loop(){
   changeColorLinear(distance);
   printDistance(distance);
   
-  delay(1000);
+  delay(50);
 }
 
 void changeColorLinear(int distance){
-  float maxDistance = 200;
+  float maxDistance = 100;
   float minDistance = 10;
 
   uint32_t leds[strip.numPixels()];
@@ -52,12 +52,7 @@ void changeColorLinear(int distance){
   
   distance = max(minDistance, distance);
   distance = min(maxDistance, distance);
-  
   int height = 16 - (16 * ( (distance - minDistance) / (maxDistance - minDistance) ) );  
-
-  Serial.print("height: ");
-  Serial.print(height);
-  Serial.println();
 
   for(uint16_t i=0; i<strip.numPixels(); i++) {
     if(i <= height){
