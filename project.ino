@@ -17,7 +17,7 @@
 
 #define PIN_STRIP 6
 #define PIN_SENSOR 7
-#define NUMBER_PINS 16
+#define NUMBER_PINS 48
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_PINS, PIN_STRIP, NEO_GRB + NEO_KHZ800);
 
@@ -25,23 +25,72 @@ void setup() {
   Serial.begin(9600);
   
   strip.begin();
+  strip.setBrightness(64);
   strip.show();
 }
 
 void loop(){
   triggerSensor();
   int distance = readSensor();
-  changeColorLinear(distance);
+  //changeColorLinear(distance);
+  circleVis(distance);
+  
   printDistance(distance);
   
-  delay(50);
+  delay(100);
 }
+
+void circleVis(int distance) {
+  float maxDistance = 50;
+  float minDistance = 10;
+
+  uint32_t leds[NUMBER_PINS];
+  
+  /*
+  for(int i=0; i<NUMBER_PINS; i++){
+    leds[i] = strip.Color(100, 0, 0);
+    }
+    */
+  distance = max(minDistance, distance);
+  distance = min(maxDistance, distance);
+  
+  int height = NUMBER_PINS - (NUMBER_PINS * ( (distance - minDistance) / (maxDistance - minDistance) ) );    
+  
+  Serial.print("height: ");
+  Serial.print(height);
+  Serial.println();
+  
+  int single_strip = NUMBER_PINS / 3;
+  
+  Serial.print("single: ");
+  Serial.print(single_strip);
+  Serial.println();
+  
+  strip.setBrightness(height * 5);
+  
+  for(uint16_t i=0; i<single_strip/2; i++) {
+    if(i <= height/3 && height/3 != 0){
+      for(uint16_t j=0; j < 3; j++) {
+          strip.setPixelColor(single_strip/2 + single_strip*j + i, strip.Color(255, 0, 0));
+          strip.setPixelColor(single_strip/2 + single_strip*j - i -1, strip.Color(255, 0, 0));
+        }
+     }
+    else{
+      for(uint16_t j=0; j < 3; j++) {
+          strip.setPixelColor(single_strip/2 + single_strip*j + i, strip.Color(0, 0, 0));
+          strip.setPixelColor(single_strip/2 + single_strip*j - i -1, strip.Color(0, 0, 0));
+        }
+    }    
+  }
+  strip.show();
+} 
 
 void changeColorLinear(int distance){
   float maxDistance = 100;
   float minDistance = 10;
 
   uint32_t leds[strip.numPixels()];
+  
   
   for(int i=0; i<strip.numPixels(); i++){
     int value = min(i*20,255);
@@ -52,7 +101,12 @@ void changeColorLinear(int distance){
   
   distance = max(minDistance, distance);
   distance = min(maxDistance, distance);
-  int height = 16 - (16 * ( (distance - minDistance) / (maxDistance - minDistance) ) );  
+  
+  int height = NUMBER_PINS - (NUMBER_PINS * ( (distance - minDistance) / (maxDistance - minDistance) ) );  
+
+  Serial.print("height: ");
+  Serial.print(height);
+  Serial.println();
 
   for(uint16_t i=0; i<strip.numPixels(); i++) {
     if(i <= height){
