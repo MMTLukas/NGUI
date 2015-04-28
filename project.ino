@@ -30,12 +30,12 @@ int servoSteps = 6;
 int servoMinAngle = 0;
 int servoMaxAngle = 90;
 int servoStepAngle = (servoMaxAngle-servoMinAngle)/(servoSteps-1);
-int servoMSPerDegree = 5;
+int servoMSPerDegree = 200;
 
-int distanceValues[servoSteps];
+int distanceValues[6];
 
 void setup() {
-  for(int i=0; i<servoSteps; i++){
+  for(int i=0; i<servoSteps; i+=1){
     distanceValues[i] = 0;
   }
   
@@ -51,114 +51,95 @@ void setup() {
 }
 
 void loop(){
-  var i = 0;
+  int i = 0;
   for(servoPos = servoMinAngle; servoPos < servoMaxAngle; servoPos += servoStepAngle){
-    execute(servoPos, i);
+    readSensorWriteLEDs(servoPos, i);
     i+=1;
   }
   
   for(servoPos = servoMaxAngle; servoPos>servoMinAngle; servoPos-=servoStepAngle)
   {                
-    execute(servoPos, i);
+    readSensorWriteLEDs(servoPos, i);
     i-=1;
   }
 }
 
-void execute(servoPos){
-  servo.write(servoPos, i);
+void readSensorWriteLEDs(int servoPos, int i){
+  servo.write(servoPos);
   
   triggerSensor();
-  int distance = readSensor();
+  int distance = readSensor();;
   printDistance(distance);
  
-  distanceValues[i] = distance;
+  distanceValues[i] = distance; 
   visualizeCircle();
   
   delay(servoMSPerDegree*servoStepAngle);
 }
 
+/**
+ * VISUALIZATION TYPE 1
+ *
+ *    LED-STRIPS:    OBJECT: comming from right
+ *                           near at the right
+ *    [ ][ ][ ]              nearer at the center
+ *    [ ][X][ ]      
+ *    [X][X][ ]  =   [o][o][O][O][ ][ ]
+ *    [ ][X][ ]      
+ *    [ ][ ][ ]      
+ * 
+ **/
+ 
 void visualizeCircle() {
   float maxDistance = 50;
   float minDistance = 10;
   
-  distance = (distanceValues[0] + distanceValues[1]) / 2;
+  //Calculate the color and the amount of leds for every strip
+  for(int i=0; i<NUMBER_STRIPS; i++){
   
-  distance = max(minDistance, distance);
-  distance = min(maxDistance, distance);
+    //to get the with 1,2,3 the needed indices we use i*2 and i*2+1
+    //0 = 0,1 / 1 = 2,3 / 2 = 4,5   
+    int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;
+    distance = max(minDistance, distance);
+    distance = min(maxDistance, distance);
     
-  int height = NUMBER_LEDS/NUMBER_STRIPS - (NUMBER_LEDS/NUMBER_STRIPS * ( (distance - minDistance) / (maxDistance - minDistance) ) );    
-  
-  int single_strip = NUMBER_PINS / 3;
-  
-  strip.setBrightness(height * 5);
-  
-  for(uint16_t i=0; i<single_strip/2; i++) {
-    if(i <= height/3 && height/3 != 0){
-      for(uint16_t j=0; j < 3; j++) {
-          strip.setPixelColor(single_strip/2 + single_strip*j + i, strip.Color(255, 0, 0));
-          strip.setPixelColor(single_strip/2 + single_strip*j - i -1, strip.Color(255, 0, 0));
-        }
-     }
-    else{
-      for(uint16_t j=0; j < 3; j++) {
-          strip.setPixelColor(single_strip/2 + single_strip*j + i, strip.Color(0, 0, 0));
-          strip.setPixelColor(single_strip/2 + single_strip*j - i -1, strip.Color(0, 0, 0));
-        }
-    }    
+    int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
+    
+    //how many of the leds of one strip should be switched on
+    int heightToLight = heightStrip * ( (distance - minDistance) / (maxDistance - minDistance) );   
+    
+    //Calculate the color and the amount of leds for the single strip i
+    for(int j=0; j<heightStrip; j++) {
+      int centerOfStrip = heightStrip/2;
+      int farestLEDFromCenter = heightToLight/2
+      
+      /**
+       *   [ ]  When the j is not over or under the heightStrip half plus/minus
+       *   [X]  the height calculated with the distance than it should be switched on
+       *   [X]  <- Center
+       *   [X]  
+       *   [ ]  OVerwise it should be off (hear the most top and bottom one)
+       **/
+       
+      if(j <= centerOfStrip+farestLEDFromCenter && j >= centerOfStrip+farestLEDFromCenter){
+        strip.setPixelColor(j+(i*heightStrip), strip.Color(255, 0, 0));
+        strip.setPixelColor(j+(i*heightStrip), strip.Color(255, 0, 0));
+      }
+      else{
+        strip.setPixelColor(j+(i*heightStrip), strip.Color(0, 0, 0));
+        strip.setPixelColor(j+(i*heightStrip), strip.Color(0, 0, 0));
+      } 
+    }
   }
+  
   strip.show();
 } 
 
-void changeColorLinear(int distance){
-  float maxDistance = 100;
-  float minDistance = 10;
-
-  uint32_t leds[strip.numPixels()];
-  
-  
-  for(int i=0; i<strip.numPixels(); i++){
-    int value = min(i*20,255);
-    int green = 255-value;
-    int red = value;
-    leds[i] = strip.Color(red, green, 0);
-  }
-  
-  distance = max(minDistance, distance);
-  distance = min(maxDistance, distance);
-  
-  int height = NUMBER_PINS - (NUMBER_PINS * ( (distance - minDistance) / (maxDistance - minDistance) ) );  
-
-  for(uint16_t i=0; i<strip.numPixels(); i++) {
-    if(i <= height){
-      strip.setPixelColor(i, leds[i]);
-    }
-    else{
-      strip.setPixelColor(i, strip.Color(0,0,0));
-    }    
-  }
-  
-  strip.show();
-}
-
-long changeColorAll(int distance){
-  int maxDistance = 200;
-  int minDistance = 50;
-  
-  distance = max(minDistance, distance);
-  distance = min(maxDistance, distance);
-
-  int value = 255.00 / (maxDistance - minDistance) * (distance - minDistance);
-  int green = value;
-  int red = 255 - value;
-
-  uint32_t c = strip.Color(red, green, 0);
-
-  for(uint16_t i=0; i<strip.numPixels(); i++) {
-    strip.setPixelColor(i, c);
-  }
-  
-  strip.show();
-}
+/** 
+ *
+ * DISTANCE SENSOR
+ *
+ **/
 
 long readSensor(){
   // The same pin is used to read the signal from the PING))): a HIGH
@@ -169,12 +150,6 @@ long readSensor(){
   
   // convert the time into a distance
   return microsecondsToCentimeters(duration);
-}
-
-void printDistance(int distance){
-  Serial.print(distance);
-  Serial.print(" cm");
-  Serial.println();
 }
 
 void triggerSensor(){
@@ -188,6 +163,18 @@ void triggerSensor(){
   digitalWrite(PIN_SENSOR, LOW);  
 }
 
+/** 
+ * 
+ * HELPER FUNCTIONS
+ *
+ **/
+ 
+void printDistance(int distance){
+  Serial.print(distance);
+  Serial.print(" cm");
+  Serial.println();
+}
+ 
 int microsecondsToCentimeters(long microseconds)
 {
   // The speed of sound is 340 m/s or 29 microseconds per centimeter.
