@@ -1,55 +1,60 @@
-/* Ping))) Sensor
- 
- This sketch reads a PING))) ultrasonic rangefinder and returns the
- distance to the closest object in range. To do this, it sends a pulse
- to the sensor to initiate a reading, then listens for a pulse 
- to return.  The length of the returning pulse is proportional to 
- the distance of the object from the sensor.
- 
- The circuit:
- 	* +V connection of the PING))) attached to +5V
- 	* GND connection of the PING))) attached to ground
- 	* SIG connection of the PING))) attached to digital pin 7
- */
- 
 #include <Adafruit_NeoPixel.h>
 #include <Servo.h> 
 #include <avr/power.h>
 
+//Hardware constants
 #define PIN_STRIP 6
 #define PIN_SENSOR 7
 #define PIN_SERVO 8
+
 #define NUMBER_LEDS 48
 #define NUMBER_STRIPS 3
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_LEDS, PIN_STRIP, NEO_GRB + NEO_KHZ800);
 Servo servo;
 
+//Servo variables
 int servoPos = 0;
 int servoSteps = 6;
 int servoMinAngle = 0;
 int servoMaxAngle = 90;
 int servoStepAngle = (servoMaxAngle-servoMinAngle)/(servoSteps-1);
-int servoMSPerDegree = 200;
+int servoMSPerDegree = 5;
 
+//Max and Min value for the distance sensor
+float maxDistance = 50;
+float minDistance = 10;
+
+//Store of the measured distances of each servo step
 int distanceValues[6];
 
 void setup() {
+  //Init distance store to far away
   for(int i=0; i<servoSteps; i+=1){
     distanceValues[i] = 0;
   }
   
+  //For console output
   Serial.begin(9600);
   
+  //Init led strips
   strip.begin();
   strip.setBrightness(64);
   strip.show();
   
+  //Set servo to init position
+  //And wait for the servo reaching the position
   servo.attach(PIN_SERVO);
   servo.write(servoPos);
-  delay(500);
+  delay(5*360);
 }
 
+/**
+ *
+ *  MAIN
+ *  Move servo, read sensor and write leds
+ *
+ */
 void loop(){
   int i = 0;
   for(servoPos = servoMinAngle; servoPos < servoMaxAngle; servoPos += servoStepAngle){
@@ -64,16 +69,16 @@ void loop(){
   }
 }
 
-void readSensorWriteLEDs(int servoPos, int i){
-  servo.write(servoPos);
+void readSensorWriteLEDs(int servoPosition, int i){
+  servo.write(servoPosition);
   
   triggerSensor();
   int distance = readSensor();;
   printDistance(distance);
  
-  distanceValues[i] = distance; 
-  visualizeCircle();
-  
+  distanceValues[i] = distance;
+  visualizeWithDirection();
+
   delay(servoMSPerDegree*servoStepAngle);
 }
 
@@ -90,10 +95,7 @@ void readSensorWriteLEDs(int servoPos, int i){
  * 
  **/
  
-void visualizeCircle() {
-  float maxDistance = 50;
-  float minDistance = 10;
-  
+void visualizeWithDirection() {
   //Calculate the color and the amount of leds for every strip
   for(int i=0; i<NUMBER_STRIPS; i++){
   
@@ -106,22 +108,29 @@ void visualizeCircle() {
     int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
     
     //how many of the leds of one strip should be switched on
-    int heightToLight = heightStrip * ( (distance - minDistance) / (maxDistance - minDistance) );   
+    //more distances = less leds
+    int heightToLight = heightStrip - heightStrip * ( (distance - minDistance) / (maxDistance - minDistance) );   
+    
+    int centerOfStrip = heightStrip/2;
+    int farestLEDFromCenter = heightToLight/2;
     
     //Calculate the color and the amount of leds for the single strip i
     for(int j=0; j<heightStrip; j++) {
-      int centerOfStrip = heightStrip/2;
-      int farestLEDFromCenter = heightToLight/2
-      
       /**
        *   [ ]  When the j is not over or under the heightStrip half plus/minus
        *   [X]  the height calculated with the distance than it should be switched on
        *   [X]  <- Center
        *   [X]  
        *   [ ]  OVerwise it should be off (hear the most top and bottom one)
-       **/
+       **/       
        
-      if(j <= centerOfStrip+farestLEDFromCenter && j >= centerOfStrip+farestLEDFromCenter){
+      /**
+       * Default for 16 leds high strip, when farestLEDFromCenter = 0
+       *
+       * [ ][ ][ ][ ][ ][ ][ ][x][x][ ][ ][ ][ ][ ][ ][ ]
+       *
+       **/
+      if(j < centerOfStrip+farestLEDFromCenter && j >= centerOfStrip-farestLEDFromCenter){      
         strip.setPixelColor(j+(i*heightStrip), strip.Color(255, 0, 0));
         strip.setPixelColor(j+(i*heightStrip), strip.Color(255, 0, 0));
       }
@@ -172,6 +181,14 @@ void triggerSensor(){
 void printDistance(int distance){
   Serial.print(distance);
   Serial.print(" cm");
+  Serial.println();
+}
+
+void printDistanceValues(){
+  for(int i=0; i<servoSteps; i++){
+    Serial.print(distanceValues[i]);
+    Serial.print(" ");
+  }
   Serial.println();
 }
  
