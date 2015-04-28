@@ -70,17 +70,77 @@ void loop(){
 }
 
 void readSensorWriteLEDs(int servoPosition, int i){
-  servo.write(servoPosition);
+  //servo.write(servoPosition);
   
   triggerSensor();
   int distance = readSensor();;
   printDistance(distance);
  
   distanceValues[i] = distance;
-  visualizeWithDirection();
+  visualizeLinear();
 
   delay(servoMSPerDegree*servoStepAngle);
 }
+
+
+/**
+ * VISUALIZATION TYPE 2
+ *
+ *    LED-STRIPS:    OBJECT: comming from right
+ *                           near at the right
+ *    [ ][ ][ ]              nearer at the center
+ *    [ ][*][ ]      
+ *    [*][x][ ]  =   [o][o][O][O][ ][ ]
+ *    [x][X][ ]      
+ *    [X][X][ ]      
+ * 
+ *    bottom = green  
+ *    top = red
+ **/
+ 
+void visualizeLinear() {
+  //Calculate the color and the amount of leds for every strip
+  for(int i=0; i<NUMBER_STRIPS; i++){
+  
+    //to get the with 1,2,3 the needed indices we use i*2 and i*2+1
+    //0 = 0,1 / 1 = 2,3 / 2 = 4,5   
+    int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;
+    distance = max(minDistance, distance);
+    distance = min(maxDistance, distance);
+    
+    int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
+    
+    //how many of the leds of one strip should be switched on
+    //more distances = less leds
+    int heightToLight = heightStrip - heightStrip * ( (distance - minDistance) / (maxDistance - minDistance) );   
+    
+    //Calculate the color and the amount of leds for the single strip i
+    for(int j=0; j<heightStrip; j++) {
+      
+      //Workaround for the second led strip, which is upside down
+      int idx = 0;
+      if(i == 1){
+        idx = 2*i*heightStrip-j-1;
+      }
+      else{
+        idx = j+(i*heightStrip);
+      }
+      
+      //Check if the leds is one of the leds which should be switched on
+      if(j <= heightToLight){          
+        int delta = 255*0.33/heightStrip*j;
+        
+        //Most green for low j's, more red for higher j's
+        strip.setPixelColor(idx, strip.Color(255*0.66 + delta, 255*0.33 - delta, 0));
+      }
+      else{
+        strip.setPixelColor(idx, strip.Color(0, 0, 0));
+      } 
+    }
+  }
+  
+  strip.show();
+} 
 
 /**
  * VISUALIZATION TYPE 1
@@ -90,8 +150,9 @@ void readSensorWriteLEDs(int servoPosition, int i){
  *    [ ][ ][ ]              nearer at the center
  *    [ ][X][ ]      
  *    [X][X][ ]  =   [o][o][O][O][ ][ ]
+ *    [X][X][ ]      
  *    [ ][X][ ]      
- *    [ ][ ][ ]      
+ *    [ ][ ][ ]  
  * 
  **/
  
@@ -125,10 +186,11 @@ void visualizeWithDirection() {
        **/       
        
       /**
-       * Default for 16 leds high strip, when farestLEDFromCenter = 0
+       * For 16 leds high strip, when farestLEDFromCenter = 0
+       * [ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ][ ]
        *
-       * [ ][ ][ ][ ][ ][ ][ ][x][x][ ][ ][ ][ ][ ][ ][ ]
-       *
+       * For 16 leds high strip, when farestLEDFromCenter = 3
+       * [ ][ ][ ][ ][ ][x][x][x][x][x][x][ ][ ][ ][ ][ ]
        **/
       if(j < centerOfStrip+farestLEDFromCenter && j >= centerOfStrip-farestLEDFromCenter){      
         strip.setPixelColor(j+(i*heightStrip), strip.Color(255, 0, 0));
@@ -142,7 +204,7 @@ void visualizeWithDirection() {
   }
   
   strip.show();
-} 
+}
 
 /** 
  *
