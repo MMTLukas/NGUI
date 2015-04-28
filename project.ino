@@ -13,58 +13,82 @@
  */
  
 #include <Adafruit_NeoPixel.h>
+#include <Servo.h> 
 #include <avr/power.h>
 
 #define PIN_STRIP 6
 #define PIN_SENSOR 7
-#define NUMBER_PINS 48
+#define PIN_SERVO 8
+#define NUMBER_LEDS 48
+#define NUMBER_STRIPS 3
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_PINS, PIN_STRIP, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_LEDS, PIN_STRIP, NEO_GRB + NEO_KHZ800);
+Servo servo;
+
+int servoPos = 0;
+int servoSteps = 6;
+int servoMinAngle = 0;
+int servoMaxAngle = 90;
+int servoStepAngle = (servoMaxAngle-servoMinAngle)/(servoSteps-1);
+int servoMSPerDegree = 5;
+
+int distanceValues[servoSteps];
 
 void setup() {
+  for(int i=0; i<servoSteps; i++){
+    distanceValues[i] = 0;
+  }
+  
   Serial.begin(9600);
   
   strip.begin();
   strip.setBrightness(64);
   strip.show();
+  
+  servo.attach(PIN_SERVO);
+  servo.write(servoPos);
+  delay(500);
 }
 
 void loop(){
-  triggerSensor();
-  int distance = readSensor();
-  //changeColorLinear(distance);
-  circleVis(distance);
+  var i = 0;
+  for(servoPos = servoMinAngle; servoPos < servoMaxAngle; servoPos += servoStepAngle){
+    execute(servoPos, i);
+    i+=1;
+  }
   
-  printDistance(distance);
-  
-  delay(100);
+  for(servoPos = servoMaxAngle; servoPos>servoMinAngle; servoPos-=servoStepAngle)
+  {                
+    execute(servoPos, i);
+    i-=1;
+  }
 }
 
-void circleVis(int distance) {
+void execute(servoPos){
+  servo.write(servoPos, i);
+  
+  triggerSensor();
+  int distance = readSensor();
+  printDistance(distance);
+ 
+  distanceValues[i] = distance;
+  visualizeCircle();
+  
+  delay(servoMSPerDegree*servoStepAngle);
+}
+
+void visualizeCircle() {
   float maxDistance = 50;
   float minDistance = 10;
-
-  uint32_t leds[NUMBER_PINS];
   
-  /*
-  for(int i=0; i<NUMBER_PINS; i++){
-    leds[i] = strip.Color(100, 0, 0);
-    }
-    */
+  distance = (distanceValues[0] + distanceValues[1]) / 2;
+  
   distance = max(minDistance, distance);
   distance = min(maxDistance, distance);
-  
-  int height = NUMBER_PINS - (NUMBER_PINS * ( (distance - minDistance) / (maxDistance - minDistance) ) );    
-  
-  Serial.print("height: ");
-  Serial.print(height);
-  Serial.println();
+    
+  int height = NUMBER_LEDS/NUMBER_STRIPS - (NUMBER_LEDS/NUMBER_STRIPS * ( (distance - minDistance) / (maxDistance - minDistance) ) );    
   
   int single_strip = NUMBER_PINS / 3;
-  
-  Serial.print("single: ");
-  Serial.print(single_strip);
-  Serial.println();
   
   strip.setBrightness(height * 5);
   
@@ -103,10 +127,6 @@ void changeColorLinear(int distance){
   distance = min(maxDistance, distance);
   
   int height = NUMBER_PINS - (NUMBER_PINS * ( (distance - minDistance) / (maxDistance - minDistance) ) );  
-
-  Serial.print("height: ");
-  Serial.print(height);
-  Serial.println();
 
   for(uint16_t i=0; i<strip.numPixels(); i++) {
     if(i <= height){
@@ -153,7 +173,7 @@ long readSensor(){
 
 void printDistance(int distance){
   Serial.print(distance);
-  Serial.print("cm");
+  Serial.print(" cm");
   Serial.println();
 }
 
