@@ -21,8 +21,6 @@ unsigned long pingTimer1, pingTimer2, pingTimer3;
 
 //Hardware constants
 #define PIN_STRIP 5
-//#define PIN_SENSOR 7
-//#define PIN_SERVO 8
 
 #define NUMBER_LEDS 48
 #define NUMBER_STRIPS 3
@@ -30,32 +28,19 @@ unsigned long pingTimer1, pingTimer2, pingTimer3;
 #define PIN_SWITCH 2
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_LEDS, PIN_STRIP, NEO_GRB + NEO_KHZ800);
-//Servo servo;
 
-//Servo variables
-//int servoPos = 0;
-//int servoSteps = 6;
-//int servoMinAngle = 0;
-//int servoMaxAngle = 90;
-//int servoStepAngle = (servoMaxAngle-servoMinAngle)/(servoSteps-1);
-//int servoMSPerDegree = 5;
 
 //Store of the measured distances of each servo step
-//int distanceValues[6];
-  int distanceValues[3];
+int distanceValues[3];
 
 void setup() {  
   //Init distance store to far away
-//  for(int i=0; i<servoSteps; i+=1){
-//    distanceValues[i] = 0;
-//  }
-  distanceValues[0] = 0;
-  distanceValues[1] = 0;
-  distanceValues[2] = 0;
+  for(int i=0; i<NUMBER_STRIPS; i+=1){
+    distanceValues[i] = 0;
+  }
   
-  pinMode(PIN_SWITCH, INPUT_PULLUP);           // set pin to input with internal pullup resistor
+  pinMode(PIN_SWITCH, INPUT_PULLUP); // set pin to input with internal pullup resistor
   
-  //
   pingTimer1 = millis() + pingSpeed; // Sensor 1 fires after 100ms (pingSpeed)
   pingTimer2 = pingTimer1 + (pingSpeed / 2); // Sensor 2 fires 50ms later
   pingTimer3 = pingTimer2 + (pingSpeed / 2); // Sensor 3 fires 50ms later
@@ -67,39 +52,20 @@ void setup() {
   strip.begin();
   strip.setBrightness(64);
   strip.show();
-  
-  //Set servo to init position
-  //And wait for the servo reaching the position
-//  servo.attach(PIN_SERVO);
-//  servo.write(servoPos);
-//  delay(5*360);
 }
-
 /**
  *
  *  MAIN
  *  Move servo, read sensor and write leds
  *
  */
-void loop(){
-//  int i = 0;
-//  for(servoPos = servoMinAngle; servoPos < servoMaxAngle; servoPos += servoStepAngle){
-//    readSensorWriteLEDs(servoPos, i);
-//    i+=1;
-//  }
-//  
-//  for(servoPos = servoMaxAngle; servoPos>servoMinAngle; servoPos-=servoStepAngle)
-//  {                
-//    readSensorWriteLEDs(servoPos, i);
-//    i-=1;
-//  }
-   if (millis() >= pingTimer1) {
+void loop(){  
+ if (millis() >= pingTimer1) {
    pingTimer1 += pingSpeed; // Make sensor 1 fire again 100ms later (pingSpeed)
    distanceValues[0] = sonar1.ping_cm();
    Serial.print("Ping 1: ");
    Serial.print(distanceValues[0]); // Convert ping time to distance and print result (0 = outside set distance range, no ping echo)
-   Serial.println("cm");
-   
+   Serial.println("cm");  
  }
  if (millis() >= pingTimer2) {
    pingTimer2 = pingTimer1 + (pingSpeed / 2); // Make sensor 2 fire again 50ms after sensor 1 fires
@@ -139,24 +105,6 @@ void loop(){
     }
   }
 }
-
-//void readSensorWriteLEDs(int servoPosition, int i){
-//  servo.write(servoPosition);
-//  delay(servoMSPerDegree*servoStepAngle);
-//  
-//  triggerSensor();
-//  int distance = readSensor();
-//  printDistance(distance);
-//  
-//  distance = max(minDistance, distance);
-//  distance = min(maxDistance, distance);
-//  distanceValues[i] = distance;
-//
-//  visualizeWithDirection();
-//
-//  delay(35);
-//}
-
 
 /**
  * VISUALIZATION TYPE 2
@@ -278,40 +226,7 @@ void visualizeWithDirection() {
   strip.show();
 }
 
-/** 
- *
- * DISTANCE SENSOR
- *
- **/
 
-//long readSensor(){
-//  // The same pin is used to read the signal from the PING))): a HIGH
-//  // pulse whose duration is the time (in microseconds) from the sending
-//  // of the ping to the reception of its echo off of an object.
-//  pinMode(PIN_SENSOR, INPUT);
-//  long duration = pulseIn(PIN_SENSOR, HIGH);
-//  
-//  // convert the time into a distance
-//  return microsecondsToCentimeters(duration);
-//}
-
-//void triggerSensor(){
-//  // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
-//  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
-//  pinMode(PIN_SENSOR, OUTPUT);
-//  digitalWrite(PIN_SENSOR, LOW);
-//  delayMicroseconds(2);
-//  digitalWrite(PIN_SENSOR, HIGH);
-//  delayMicroseconds(5);
-//  digitalWrite(PIN_SENSOR, LOW);  
-//}
-
-/** 
- * 
- * HELPER FUNCTIONS
- *
- **/
- 
 //void printDistance(int distance){
 //  Serial.print(distance);
 //  Serial.print(" cm");
