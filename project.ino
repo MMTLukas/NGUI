@@ -31,12 +31,15 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_LEDS, PIN_STRIP, NEO_GRB + NE
 
 
 //Store of the measured distances of each servo step
-int distanceValues[3];
+  int distanceValues[3];
+  int distanceValuesFade[3];
+
 
 void setup() {  
   //Init distance store to far away
-  for(int i=0; i<NUMBER_STRIPS; i+=1){
-    distanceValues[i] = 0;
+  for(int i=0; i < 3; i++){
+    distanceValues[i] = maxDistance;
+    distanceValuesFade[i] = maxDistance;
   }
   
   pinMode(PIN_SWITCH, INPUT_PULLUP); // set pin to input with internal pullup resistor
@@ -83,7 +86,7 @@ void loop(){
    Serial.print(distanceValues[2]); // Convert ping time to distance and print result (0 = outside set distance range, no ping echo)
    Serial.println("cm");
    
-   Serial.println("PIN_SWITCH: ");
+   Serial.print("PIN_SWITCH: ");
    Serial.println(digitalRead(PIN_SWITCH));
    
    for(int i=0; i < 3; i++) {
@@ -95,6 +98,15 @@ void loop(){
         distanceValues[i] = minDistance;
       }
      }
+     if(distanceValues[i] < distanceValuesFade[i]) {
+        distanceValuesFade[i] = distanceValues[i];
+     }
+     else {
+      distanceValuesFade[i] = distanceValuesFade[i] + (distanceValues[i] / 6) ;
+      
+     }
+     Serial.print("dist values FADE: ");
+     Serial.println(distanceValuesFade[i]);
    }
    
    if(digitalRead(PIN_SWITCH)) {
@@ -128,7 +140,7 @@ void visualizeLinear() {
     //to get the with 1,2,3 the needed indices we use i*2 and i*2+1
     //0 = 0,1 / 1 = 2,3 / 2 = 4,5   
     //int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;  
-    int distance = distanceValues[i];
+    int distance = distanceValuesFade[i];
     //Serial.println(distance);
     int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
     
@@ -185,7 +197,7 @@ void visualizeWithDirection() {
     //to get the with 1,2,3 the needed indices we use i*2 and i*2+1
     //0 = 0,1 / 1 = 2,3 / 2 = 4,5   
     //int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;
-    int distance = distanceValues[i];
+    int distance = distanceValuesFade[i];
     int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
     
     //how many of the leds of one strip should be switched on
