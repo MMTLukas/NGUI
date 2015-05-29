@@ -22,13 +22,13 @@ int servoStepAngle = (servoMaxAngle-servoMinAngle)/(servoSteps-1);
 int servoMSPerDegree = 5;
 
 //Max and Min value for the distance sensor
-float maxDistance = 50;
+float maxDistance = 500;
 float minDistance = 10;
 
 //Store of the measured distances of each servo step
 int distanceValues[6];
 
-void setup() {
+void setup() {  
   //Init distance store to far away
   for(int i=0; i<servoSteps; i+=1){
     distanceValues[i] = 0;
@@ -70,16 +70,20 @@ void loop(){
 }
 
 void readSensorWriteLEDs(int servoPosition, int i){
-  //servo.write(servoPosition);
+  servo.write(servoPosition);
+  delay(servoMSPerDegree*servoStepAngle);
   
   triggerSensor();
-  int distance = readSensor();;
+  int distance = readSensor();
   printDistance(distance);
- 
+  
+  distance = max(minDistance, distance);
+  distance = min(maxDistance, distance);
   distanceValues[i] = distance;
-  visualizeLinear();
 
-  delay(servoMSPerDegree*servoStepAngle);
+  visualizeWithDirection();
+
+  delay(35);
 }
 
 
@@ -104,10 +108,8 @@ void visualizeLinear() {
   
     //to get the with 1,2,3 the needed indices we use i*2 and i*2+1
     //0 = 0,1 / 1 = 2,3 / 2 = 4,5   
-    int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;
-    distance = max(minDistance, distance);
-    distance = min(maxDistance, distance);
-    
+    int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;    
+    Serial.println(distance);
     int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
     
     //how many of the leds of one strip should be switched on
@@ -163,9 +165,6 @@ void visualizeWithDirection() {
     //to get the with 1,2,3 the needed indices we use i*2 and i*2+1
     //0 = 0,1 / 1 = 2,3 / 2 = 4,5   
     int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;
-    distance = max(minDistance, distance);
-    distance = min(maxDistance, distance);
-    
     int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
     
     //how many of the leds of one strip should be switched on
