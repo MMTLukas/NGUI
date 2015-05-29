@@ -1,0 +1,52 @@
+Related Work: Einpark-Sensoren Arten untersuchen, LED-Streifen
+Vision umändern auf besseres Wort
+Namen + Abkürzung (drei Buchstaben)
+Evaluierungsmöglichkeiten: 
+- Haben Hardwareprototyp
+- Verschiedene Visualisierungen untersuchen
+- Testpersonen fragen, was sie sich erwarten
+- Testpersonen fragen, welche Art am besten darstellt
+- Ablenkungstask? Was an der Mittelkonsole lesen lassen
+- Bewegung und Farben holen die Aufmerksamkeit wieder
+- Winkel von A-Säule ausschlaggebend
+- 2 Arten sind ausreichend: Movitation für die Darstellungsart erklären.
+- In 2 Wochen im Auto montieren
+- Indoor-Setup aufbauen und händisch testen
+- Aussagen der Leute tätigen lassen, wie weit das Objekt entfernt ist
+
+Testszenario:
+- Within Subject Design: Jeder Teilnehmer macht jede Aufgabe, Vergleich auf Teilnehmerebene.
+- Between Subject Design: Teilnehmer gehören nur zu einer Grupppe von mehreren. Die Gruppen werden als Einheit verglichen. z.B. zwei Gruppen, jede bekommt eine Visualisierung zu testen.
+Sagen woher man die Participants hat, welchen Anreiz die gehabt haben.
+Erfahrungen nicht notwendig, fahrtauglich muss man sein
+
+##############################################################
+
+# Evaluierung #
+
+5 Personen bekommen alle hintereinander die gleiche Aufgaben. Within-Subject-Design. 
+
+## Aufgaben & Fragen ##
+
+- Was erwarten Sie sich von der Installation?
+- Wie weit ist das dargestellte Objekt entfernt?
+  - Für jeweils 1, 3, 2, 4 Meter Enfernung
+  - Abdeckung, so dass man nicht um die A-Säule herumschauen kann
+- Erkennen Sie eine Bewegung oder Richtung?
+  - Bewegung eines Objektes von Links nach Rechts
+  - Bewegung eines Objektes von Rechts nach Links
+  - Objekt bewegt sich nicht
+- Wie gut wird die Distanz dargestellt?
+  - Visualisierung mit Linear und Circle
+- Wie gut wird die Richtung dargestellt?
+  - Visualisierung mit Linear und Circle
+- Parkour mit Hindernissen: Wie fühlen Sie sich?
+- Stellen Sie den Radiosender ein, wechseln Sie die CD oder geben Sie etwas in Ihr Navigationssystem ein, Schreiben Sie eine SMS während sich ein Objekt dem Auto nähert.
+
+Ziel bis zur nächsten NextGenUI-Vorlesung:
+- Code grün verbessern
+- Fertigen Fragebogen und Testaufgaben
+- Fertige Montage für außen
+	- Auto
+	- Uhrzeit
+	- Personen
