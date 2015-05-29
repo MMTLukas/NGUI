@@ -4,13 +4,17 @@
 #include <NewPing.h>
 
 //Max and Min value for the distance sensor
-float maxDistance = 400;
+float maxDistance = 200;
 float minDistance = 10;
+
+// # Cable management sensors #
+//   SUPPLY  |   S1    |   S2    |   S3
+// GND | +5V | E1 | T1 | E2 | T2 | E3 | T3
 
 //Define 3 distance sensors
 NewPing sonar1(11, 12, maxDistance); // Sensor 1: trigger pin, echo pin, maximum distance in cm
 NewPing sonar2(9, 10, maxDistance); // Sensor 2: trigger pin, echo pin, maximum distance in cm
-NewPing sonar3(7, 6, maxDistance); // Sensor 3: trigger pin, echo pin, maximum distance in cm
+NewPing sonar3(7, 8, maxDistance); // Sensor 3: trigger pin, echo pin, maximum distance in cm
 
 #define pingSpeed 100 // Ping frequency (in milliseconds), fastest we should ping is about 35ms per sensor
 unsigned long pingTimer1, pingTimer2, pingTimer3;
@@ -116,6 +120,17 @@ void loop(){
    Serial.println("PIN_SWITCH: ");
    Serial.println(digitalRead(PIN_SWITCH));
    
+   for(int i=0; i < 3; i++) {
+     if(distanceValues[i] < minDistance) {
+      if(distanceValues[i] == 0) {
+        distanceValues[i] = maxDistance; 
+      }  
+      else {
+        distanceValues[i] = minDistance;
+      }
+     }
+   }
+   
    if(digitalRead(PIN_SWITCH)) {
       visualizeWithDirection();
     }
@@ -166,14 +181,6 @@ void visualizeLinear() {
     //0 = 0,1 / 1 = 2,3 / 2 = 4,5   
     //int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;  
     int distance = distanceValues[i];
-    if(distance < minDistance) {
-      if(distance == 0) {
-        distance = maxDistance; 
-      }  
-      else {
-        distance = minDistance;
-      }
-    }
     //Serial.println(distance);
     int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
     
@@ -231,14 +238,6 @@ void visualizeWithDirection() {
     //0 = 0,1 / 1 = 2,3 / 2 = 4,5   
     //int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;
     int distance = distanceValues[i];
-    if(distance < minDistance) {
-      if(distance == 0) {
-        distance = maxDistance; 
-      }  
-      else {
-        distance = minDistance;
-      }
-    }
     int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
     
     //how many of the leds of one strip should be switched on
