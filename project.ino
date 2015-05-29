@@ -1,38 +1,60 @@
 #include <Adafruit_NeoPixel.h>
 #include <Servo.h> 
 #include <avr/power.h>
+#include <NewPing.h>
+
+//Max and Min value for the distance sensor
+float maxDistance = 400;
+float minDistance = 10;
+
+//Define 3 distance sensors
+NewPing sonar1(11, 12, maxDistance); // Sensor 1: trigger pin, echo pin, maximum distance in cm
+NewPing sonar2(9, 10, maxDistance); // Sensor 2: trigger pin, echo pin, maximum distance in cm
+NewPing sonar3(7, 6, maxDistance); // Sensor 3: trigger pin, echo pin, maximum distance in cm
+
+#define pingSpeed 100 // Ping frequency (in milliseconds), fastest we should ping is about 35ms per sensor
+unsigned long pingTimer1, pingTimer2, pingTimer3;
 
 //Hardware constants
-#define PIN_STRIP 6
-#define PIN_SENSOR 7
-#define PIN_SERVO 8
+#define PIN_STRIP 5
+//#define PIN_SENSOR 7
+//#define PIN_SERVO 8
 
 #define NUMBER_LEDS 48
 #define NUMBER_STRIPS 3
 
+#define PIN_SWITCH 2
+
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_LEDS, PIN_STRIP, NEO_GRB + NEO_KHZ800);
-Servo servo;
+//Servo servo;
 
 //Servo variables
-int servoPos = 0;
-int servoSteps = 6;
-int servoMinAngle = 0;
-int servoMaxAngle = 90;
-int servoStepAngle = (servoMaxAngle-servoMinAngle)/(servoSteps-1);
-int servoMSPerDegree = 5;
-
-//Max and Min value for the distance sensor
-float maxDistance = 500;
-float minDistance = 10;
+//int servoPos = 0;
+//int servoSteps = 6;
+//int servoMinAngle = 0;
+//int servoMaxAngle = 90;
+//int servoStepAngle = (servoMaxAngle-servoMinAngle)/(servoSteps-1);
+//int servoMSPerDegree = 5;
 
 //Store of the measured distances of each servo step
-int distanceValues[6];
+//int distanceValues[6];
+  int distanceValues[3];
 
 void setup() {  
   //Init distance store to far away
-  for(int i=0; i<servoSteps; i+=1){
-    distanceValues[i] = 0;
-  }
+//  for(int i=0; i<servoSteps; i+=1){
+//    distanceValues[i] = 0;
+//  }
+  distanceValues[0] = 0;
+  distanceValues[1] = 0;
+  distanceValues[2] = 0;
+  
+  pinMode(PIN_SWITCH, INPUT_PULLUP);           // set pin to input with internal pullup resistor
+  
+  //
+  pingTimer1 = millis() + pingSpeed; // Sensor 1 fires after 100ms (pingSpeed)
+  pingTimer2 = pingTimer1 + (pingSpeed / 2); // Sensor 2 fires 50ms later
+  pingTimer3 = pingTimer2 + (pingSpeed / 2); // Sensor 3 fires 50ms later
   
   //For console output
   Serial.begin(9600);
@@ -44,9 +66,9 @@ void setup() {
   
   //Set servo to init position
   //And wait for the servo reaching the position
-  servo.attach(PIN_SERVO);
-  servo.write(servoPos);
-  delay(5*360);
+//  servo.attach(PIN_SERVO);
+//  servo.write(servoPos);
+//  delay(5*360);
 }
 
 /**
@@ -56,35 +78,69 @@ void setup() {
  *
  */
 void loop(){
-  int i = 0;
-  for(servoPos = servoMinAngle; servoPos < servoMaxAngle; servoPos += servoStepAngle){
-    readSensorWriteLEDs(servoPos, i);
-    i+=1;
-  }
-  
-  for(servoPos = servoMaxAngle; servoPos>servoMinAngle; servoPos-=servoStepAngle)
-  {                
-    readSensorWriteLEDs(servoPos, i);
-    i-=1;
+//  int i = 0;
+//  for(servoPos = servoMinAngle; servoPos < servoMaxAngle; servoPos += servoStepAngle){
+//    readSensorWriteLEDs(servoPos, i);
+//    i+=1;
+//  }
+//  
+//  for(servoPos = servoMaxAngle; servoPos>servoMinAngle; servoPos-=servoStepAngle)
+//  {                
+//    readSensorWriteLEDs(servoPos, i);
+//    i-=1;
+//  }
+   if (millis() >= pingTimer1) {
+   pingTimer1 += pingSpeed; // Make sensor 1 fire again 100ms later (pingSpeed)
+   distanceValues[0] = sonar1.ping_cm();
+   Serial.print("Ping 1: ");
+   Serial.print(distanceValues[0]); // Convert ping time to distance and print result (0 = outside set distance range, no ping echo)
+   Serial.println("cm");
+   
+ }
+ if (millis() >= pingTimer2) {
+   pingTimer2 = pingTimer1 + (pingSpeed / 2); // Make sensor 2 fire again 50ms after sensor 1 fires
+   distanceValues[1] = sonar2.ping_cm();
+   // Both sensors pinged, process results here
+   Serial.print("Ping 2: ");
+   Serial.print(distanceValues[1]); // Convert ping time to distance and print result (0 = outside set distance range, no ping echo)
+   Serial.println("cm");
+ }
+ if (millis() >= pingTimer3) {
+   pingTimer3 = pingTimer2 + (pingSpeed / 2); // Make sensor 2 fire again 50ms after sensor 1 fires
+   distanceValues[2] = sonar3.ping_cm();
+   // All three sensors pinged, process results here
+   Serial.print("Ping 3: ");
+   Serial.print(distanceValues[2]); // Convert ping time to distance and print result (0 = outside set distance range, no ping echo)
+   Serial.println("cm");
+   
+   Serial.println("PIN_SWITCH: ");
+   Serial.println(digitalRead(PIN_SWITCH));
+   
+   if(digitalRead(PIN_SWITCH)) {
+      visualizeWithDirection();
+    }
+    else {
+      visualizeLinear();
+    }
   }
 }
 
-void readSensorWriteLEDs(int servoPosition, int i){
-  servo.write(servoPosition);
-  delay(servoMSPerDegree*servoStepAngle);
-  
-  triggerSensor();
-  int distance = readSensor();
-  printDistance(distance);
-  
-  distance = max(minDistance, distance);
-  distance = min(maxDistance, distance);
-  distanceValues[i] = distance;
-
-  visualizeWithDirection();
-
-  delay(35);
-}
+//void readSensorWriteLEDs(int servoPosition, int i){
+//  servo.write(servoPosition);
+//  delay(servoMSPerDegree*servoStepAngle);
+//  
+//  triggerSensor();
+//  int distance = readSensor();
+//  printDistance(distance);
+//  
+//  distance = max(minDistance, distance);
+//  distance = min(maxDistance, distance);
+//  distanceValues[i] = distance;
+//
+//  visualizeWithDirection();
+//
+//  delay(35);
+//}
 
 
 /**
@@ -108,8 +164,17 @@ void visualizeLinear() {
   
     //to get the with 1,2,3 the needed indices we use i*2 and i*2+1
     //0 = 0,1 / 1 = 2,3 / 2 = 4,5   
-    int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;    
-    Serial.println(distance);
+    //int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;  
+    int distance = distanceValues[i];
+    if(distance < minDistance) {
+      if(distance == 0) {
+        distance = maxDistance; 
+      }  
+      else {
+        distance = minDistance;
+      }
+    }
+    //Serial.println(distance);
     int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
     
     //how many of the leds of one strip should be switched on
@@ -164,7 +229,16 @@ void visualizeWithDirection() {
   
     //to get the with 1,2,3 the needed indices we use i*2 and i*2+1
     //0 = 0,1 / 1 = 2,3 / 2 = 4,5   
-    int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;
+    //int distance = (distanceValues[i*2] + distanceValues[i*2+1]) / 2;
+    int distance = distanceValues[i];
+    if(distance < minDistance) {
+      if(distance == 0) {
+        distance = maxDistance; 
+      }  
+      else {
+        distance = minDistance;
+      }
+    }
     int heightStrip = NUMBER_LEDS/NUMBER_STRIPS;
     
     //how many of the leds of one strip should be switched on
@@ -211,27 +285,27 @@ void visualizeWithDirection() {
  *
  **/
 
-long readSensor(){
-  // The same pin is used to read the signal from the PING))): a HIGH
-  // pulse whose duration is the time (in microseconds) from the sending
-  // of the ping to the reception of its echo off of an object.
-  pinMode(PIN_SENSOR, INPUT);
-  long duration = pulseIn(PIN_SENSOR, HIGH);
-  
-  // convert the time into a distance
-  return microsecondsToCentimeters(duration);
-}
+//long readSensor(){
+//  // The same pin is used to read the signal from the PING))): a HIGH
+//  // pulse whose duration is the time (in microseconds) from the sending
+//  // of the ping to the reception of its echo off of an object.
+//  pinMode(PIN_SENSOR, INPUT);
+//  long duration = pulseIn(PIN_SENSOR, HIGH);
+//  
+//  // convert the time into a distance
+//  return microsecondsToCentimeters(duration);
+//}
 
-void triggerSensor(){
-  // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
-  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
-  pinMode(PIN_SENSOR, OUTPUT);
-  digitalWrite(PIN_SENSOR, LOW);
-  delayMicroseconds(2);
-  digitalWrite(PIN_SENSOR, HIGH);
-  delayMicroseconds(5);
-  digitalWrite(PIN_SENSOR, LOW);  
-}
+//void triggerSensor(){
+//  // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
+//  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+//  pinMode(PIN_SENSOR, OUTPUT);
+//  digitalWrite(PIN_SENSOR, LOW);
+//  delayMicroseconds(2);
+//  digitalWrite(PIN_SENSOR, HIGH);
+//  delayMicroseconds(5);
+//  digitalWrite(PIN_SENSOR, LOW);  
+//}
 
 /** 
  * 
@@ -239,26 +313,26 @@ void triggerSensor(){
  *
  **/
  
-void printDistance(int distance){
-  Serial.print(distance);
-  Serial.print(" cm");
-  Serial.println();
-}
-
-void printDistanceValues(){
-  for(int i=0; i<servoSteps; i++){
-    Serial.print(distanceValues[i]);
-    Serial.print(" ");
-  }
-  Serial.println();
-}
+//void printDistance(int distance){
+//  Serial.print(distance);
+//  Serial.print(" cm");
+//  Serial.println();
+//}
+//
+//void printDistanceValues(){
+//  for(int i=0; i<servoSteps; i++){
+//    Serial.print(distanceValues[i]);
+//    Serial.print(" ");
+//  }
+//  Serial.println();
+//}
  
-int microsecondsToCentimeters(long microseconds)
-{
-  // The speed of sound is 340 m/s or 29 microseconds per centimeter.
-  // The ping travels out and back, so to find the distance of the
-  // object we take half of the distance travelled.
-  return microseconds / 29 / 2;
-}
+//int microsecondsToCentimeters(long microseconds)
+//{
+//  // The speed of sound is 340 m/s or 29 microseconds per centimeter.
+//  // The ping travels out and back, so to find the distance of the
+//  // object we take half of the distance travelled.
+//  return microseconds / 29 / 2;
+//}
 
 
