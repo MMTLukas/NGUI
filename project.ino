@@ -4,7 +4,7 @@
 #include <NewPing.h>
 
 //Max and Min value for the distance sensor
-float maxDistance = 200;
+float maxDistance = 500;
 float minDistance = 10;
 
 // # Cable management sensors #
@@ -14,7 +14,7 @@ float minDistance = 10;
 //Define 3 distance sensors
 NewPing sonar1(11, 12, maxDistance); // Sensor 1: trigger pin, echo pin, maximum distance in cm
 NewPing sonar2(9, 10, maxDistance); // Sensor 2: trigger pin, echo pin, maximum distance in cm
-NewPing sonar3(7, 8, maxDistance); // Sensor 3: trigger pin, echo pin, maximum distance in cm
+//NewPing sonar3(7, 8, maxDistance); // Sensor 3: trigger pin, echo pin, maximum distance in cm
 
 #define pingSpeed 100 // Ping frequency (in milliseconds), fastest we should ping is about 35ms per sensor
 unsigned long pingTimer1, pingTimer2, pingTimer3;
@@ -26,6 +26,8 @@ unsigned long pingTimer1, pingTimer2, pingTimer3;
 #define NUMBER_STRIPS 3
 
 #define PIN_SWITCH 2
+
+#define PIN_SENSOR 4
 
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_LEDS, PIN_STRIP, NEO_GRB + NEO_KHZ800);
 
@@ -80,7 +82,8 @@ void loop(){
  }
  if (millis() >= pingTimer3) {
    pingTimer3 = pingTimer2 + (pingSpeed / 2); // Make sensor 2 fire again 50ms after sensor 1 fires
-   distanceValues[2] = sonar3.ping_cm();
+   // distanceValues[2] = sonar3.ping_cm();
+   distanceValues[2] = readSensor();
    // All three sensors pinged, process results here
    Serial.print("Ping 3: ");
    Serial.print(distanceValues[2]); // Convert ping time to distance and print result (0 = outside set distance range, no ping echo)
@@ -252,13 +255,43 @@ void visualizeWithDirection() {
 //  }
 //  Serial.println();
 //}
+
+/** 
+ *
+ * DISTANCE SENSOR
+ *
+ **/
+
+long readSensor(){
+  // The same pin is used to read the signal from the PING))): a HIGH
+  // pulse whose duration is the time (in microseconds) from the sending
+  // of the ping to the reception of its echo off of an object.
+  triggerSensor();
+
+  pinMode(PIN_SENSOR, INPUT);
+  long duration = pulseIn(PIN_SENSOR, HIGH);
+  
+  // convert the time into a distance
+  return microsecondsToCentimeters(duration);
+}
+
+void triggerSensor(){
+  // The PING))) is triggered by a HIGH pulse of 2 or more microseconds.
+  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse:
+  pinMode(PIN_SENSOR, OUTPUT);
+  digitalWrite(PIN_SENSOR, LOW);
+  delayMicroseconds(2);
+  digitalWrite(PIN_SENSOR, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(PIN_SENSOR, LOW);  
+}
  
-//int microsecondsToCentimeters(long microseconds)
-//{
-//  // The speed of sound is 340 m/s or 29 microseconds per centimeter.
-//  // The ping travels out and back, so to find the distance of the
-//  // object we take half of the distance travelled.
-//  return microseconds / 29 / 2;
-//}
+int microsecondsToCentimeters(long microseconds)
+{
+  // The speed of sound is 340 m/s or 29 microseconds per centimeter.
+  // The ping travels out and back, so to find the distance of the
+  // object we take half of the distance travelled.
+  return microseconds / 29 / 2;
+}
 
 
